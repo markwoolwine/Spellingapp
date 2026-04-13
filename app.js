@@ -231,12 +231,23 @@ function startSession() {
 
 function scrambleLetters(word) {
   const tiles = word.split('').map((letter, i) => ({ letter, id: i }));
+
+  function fisherYates(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   let shuffled;
   let tries = 0;
+  // Keep shuffling until the result differs from the original word
   do {
-    shuffled = tiles.slice().sort(() => Math.random() - 0.5);
+    shuffled = fisherYates(tiles);
     tries++;
-  } while (tries < 20 && word.length > 2 &&
+  } while (tries < 10 && word.length > 2 &&
            shuffled.map(t => t.letter).join('') === word);
   return shuffled;
 }
