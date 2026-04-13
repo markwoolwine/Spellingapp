@@ -225,12 +225,93 @@ function startSession() {
   renderSessionWord();
 }
 
+// ─────────────────────────────────────────────
+//  Letter Tiles
+// ─────────────────────────────────────────────
+
+function scrambleLetters(word) {
+  const tiles = word.split('').map((letter, i) => ({ letter, id: i }));
+  let shuffled;
+  let tries = 0;
+  do {
+    shuffled = tiles.slice().sort(() => Math.random() - 0.5);
+    tries++;
+  } while (tries < 20 && word.length > 2 &&
+           shuffled.map(t => t.letter).join('') === word);
+  return shuffled;
+}
+
+function renderTiles() {
+  const s       = _session;
+  const { tiles, placed, locked } = s.tileState;
+  const placedSet = new Set(placed);
+
+  // ── Answer row ──
+  const answerEl = document.getElementById('tile-answer');
+  if (answerEl) {
+    answerEl.innerHTML = placed.length === 0
+      ? '<span class="tile-placeholder">Tap letters to build the word</span>'
+      : placed.map((id, idx) => {
+          const t = tiles.find(x => x.id === id);
+          const cls = locked ? 'letter-tile tile-placed tile-locked' : 'letter-tile tile-placed';
+          const handler = locked ? '' : `onclick="removePlaced(${idx})"`;
+          return `<button class="${cls}" ${handler}>${t.letter.toUpperCase()}</button>`;
+        }).join('');
+  }
+
+  // ── Pool ──
+  const poolEl = document.getElementById('tile-pool');
+  if (poolEl) {
+    poolEl.innerHTML = tiles.map(t => {
+      if (placedSet.has(t.id)) {
+        return `<button class="letter-tile tile-ghost" disabled></button>`;
+      }
+      const cls = locked ? 'letter-tile tile-available tile-locked' : 'letter-tile tile-available';
+      const handler = locked ? 'disabled' : `onclick="tapTile(${t.id})"`;
+      return `<button class="${cls}" ${handler}>${t.letter.toUpperCase()}</button>`;
+    }).join('');
+  }
+
+  // Auto-check when all tiles placed
+  const wordLen = s.words[s.index].word.length;
+  if (!locked && placed.length === wordLen) {
+    setTimeout(checkAnswer, 280);
+  }
+}
+
+function tapTile(id) {
+  const s = _session;
+  if (s.tileState.locked) return;
+  if (!s.tileState.placed.includes(id)) {
+    s.tileState.placed.push(id);
+    renderTiles();
+  }
+}
+
+function removePlaced(idx) {
+  const s = _session;
+  if (s.tileState.locked) return;
+  s.tileState.placed.splice(idx, 1);
+  renderTiles();
+}
+
+function clearTiles() {
+  const s = _session;
+  if (s.tileState.locked) return;
+  s.tileState.placed = [];
+  renderTiles();
+}
+
+// ─────────────────────────────────────────────
+
 function renderSessionWord() {
   const s = _session;
   if (s.index >= s.words.length) { renderSessionComplete(); return; }
 
-  const word     = s.words[s.index];
-  s.attempts     = 0;
+  const word = s.words[s.index];
+  s.attempts = 0;
+  s.tileState = { tiles: scrambleLetters(word.word), placed: [], locked: false };
+
   const pct      = Math.round((s.index / s.words.length) * 100);
   const progress = `${s.index + 1} / ${s.words.length}`;
 
@@ -245,53 +326,50 @@ function renderSessionWord() {
       </div>
 
       <div class="word-card" id="word-card">
-        <p class="listen-label">Tap to hear the word, then spell it:</p>
+        <p class="listen-label">Tap to hear the word, then build it:</p>
         <button class="btn-speak" onclick="speakWord(${JSON.stringify(word.word)})">
           🔊 Hear the Word
         </button>
         ${word.hint ? `<p class="hint-label">💡 ${escapeHtml(word.hint)}</p>` : ''}
       </div>
 
-      <div class="answer-row">
-        <input
-          type="text"
-          id="spelling-input"
-          class="spelling-input"
-          placeholder="Type the word…"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-        />
-        <button class="btn btn-primary" onclick="checkAnswer()">Check ✓</button>
+      <div class="tile-answer-area" id="tile-answer"></div>
+      <div class="tile-pool" id="tile-pool"></div>
+
+      <div class="tile-actions">
+        <button class="btn btn-secondary" onclick="clearTiles()">Clear</button>
       </div>
 
       <div id="feedback" class="feedback"></div>
     </div>`;
 
-  // Focus input & allow Enter key
-  const input = document.getElementById('spelling-input');
-  setTimeout(() => input && input.focus(), 450);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
+  renderTiles();
 }
 
 function checkAnswer() {
-  const s     = _session;
-  const word  = s.words[s.index];
-  const input = document.getElementById('spelling-input');
-  if (!input || input.disabled) return;
+  const s    = _session;
+  const word = s.words[s.index];
+  const { tiles, placed } = s.tileState;
 
-  const typed   = input.value.trim().toLowerCase();
-  const correct = typed === word.word.toLowerCase();
+  // Guard: only check when all tiles are placed and not already locked
+  if (s.tileState.locked) return;
+  if (placed.length < word.word.length) return;
+
+  s.tileState.locked = true;
   s.attempts++;
+
+  const typed   = placed.map(id => tiles.find(t => t.id === id).letter).join('');
+  const correct = typed.toLowerCase() === word.word.toLowerCase();
 
   const card     = document.getElementById('word-card');
   const feedback = document.getElementById('feedback');
 
+  // Re-render tiles in locked state to disable further tapping
+  renderTiles();
+
   if (correct) {
     const firstTry = s.attempts === 1;
 
-    // Update SRS in the live data object
     const w = s.data.words.find(x => x.id === word.id);
     if (w) updateSRS(w, firstTry);
 
@@ -300,7 +378,6 @@ function checkAnswer() {
     saveData(s.data);
 
     card.classList.add('state-correct');
-    input.disabled = true;
 
     const msgs = ['Amazing! 🌟', 'Brilliant! 🎉', 'Perfect! ✨', 'Superstar! ⭐', 'Fantastic! 🚀', 'You got it! 🎈'];
     const msg  = msgs[Math.floor(Math.random() * msgs.length)];
@@ -314,7 +391,7 @@ function checkAnswer() {
 
     if (firstTry) launchConfetti();
 
-    setTimeout(() => { s.index++; renderSessionWord(); }, 1500);
+    setTimeout(() => { s.index++; renderSessionWord(); }, 1600);
 
   } else {
     card.classList.add('state-incorrect');
@@ -328,7 +405,6 @@ function checkAnswer() {
       s.results.push({ word: word.word, correct: false, attempts: s.attempts });
       saveData(s.data);
 
-      input.disabled = true;
       feedback.innerHTML = `
         <div class="feedback-box feedback-wrong">
           <span class="feedback-icon">❌</span>
@@ -336,14 +412,19 @@ function checkAnswer() {
           <button onclick="advanceSession()" class="btn btn-secondary">Next →</button>
         </div>`;
     } else {
+      // Shake, then unlock and reset tiles for another try
       feedback.innerHTML = `
         <div class="feedback-box feedback-retry">
           <span class="feedback-icon">🤔</span>
           <span>Not quite — try again!</span>
           <button onclick="speakWord(${JSON.stringify(word.word)})" class="btn-link">🔊 Hear it again</button>
         </div>`;
-      input.value = '';
-      input.focus();
+
+      setTimeout(() => {
+        s.tileState.placed = [];
+        s.tileState.locked = false;
+        renderTiles();
+      }, 700);
     }
   }
 }
