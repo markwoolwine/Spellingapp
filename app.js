@@ -245,7 +245,7 @@ function renderSessionWord() {
       </div>
 
       <div class="word-card" id="word-card">
-        <p class="listen-label">Listen carefully, then spell the word:</p>
+        <p class="listen-label">Tap to hear the word, then spell it:</p>
         <button class="btn-speak" onclick="speakWord(${JSON.stringify(word.word)})">
           🔊 Hear the Word
         </button>
@@ -268,9 +268,6 @@ function renderSessionWord() {
 
       <div id="feedback" class="feedback"></div>
     </div>`;
-
-  // Auto-speak after a short delay
-  setTimeout(() => speakWord(word.word), 350);
 
   // Focus input & allow Enter key
   const input = document.getElementById('spelling-input');

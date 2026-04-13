@@ -120,17 +120,24 @@ nav {
   color: white;
   border: none;
   border-radius: 14px;
-  padding: 15px 32px;
-  font-size: 1.15rem;
+  padding: 18px 40px;
+  font-size: 1.25rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(2,132,199,0.35);
+  box-shadow: 0 4px 16px rgba(2,132,199,0.4);
   transition: transform 0.15s, box-shadow 0.15s;
   display: block;
-  margin: 10px auto;
+  margin: 14px auto 6px;
+  /* pulse animation to draw attention */
+  animation: pulse-speak 2s ease-in-out infinite;
 }
-.btn-speak:hover  { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(2,132,199,0.45); }
-.btn-speak:active { transform: translateY(1px); }
+
+@keyframes pulse-speak {
+  0%, 100% { box-shadow: 0 4px 16px rgba(2,132,199,0.4); }
+  50%       { box-shadow: 0 6px 24px rgba(2,132,199,0.65); transform: scale(1.03); }
+}
+.btn-speak:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(2,132,199,0.55); animation: none; }
+.btn-speak:active { transform: translateY(1px); animation: none; }
 
 .btn-speak-sm {
   background: none;
