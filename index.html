@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spelling Practice</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <h1>Spelling Practice</h1>
+      <p id="header-subtitle">Let's practice!</p>
+    </header>
+
+    <nav>
+      <button class="tab-btn active" data-tab="practice">Practice</button>
+      <button class="tab-btn" data-tab="words">Words</button>
+      <button class="tab-btn" data-tab="progress">Progress</button>
+    </nav>
+
+    <!-- ── Practice Tab ── -->
+    <div id="tab-practice" class="tab-content active">
+      <div id="practice-home"></div>
+      <div id="practice-session" style="display:none"></div>
+    </div>
+
+    <!-- ── Words Tab ── -->
+    <div id="tab-words" class="tab-content">
+      <div class="section-card">
+        <h2>Child's Name</h2>
+        <div class="input-row">
+          <input type="text" id="child-name-input" class="text-input" placeholder="e.g. Emma" />
+          <button onclick="saveName()" class="btn btn-secondary">Save</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h2>Add a Word</h2>
+        <div class="add-word-form">
+          <input
+            type="text"
+            id="new-word-input"
+            class="text-input"
+            placeholder="Spelling word"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <input
+            type="text"
+            id="new-hint-input"
+            class="text-input"
+            placeholder="Hint or example sentence (optional)"
+          />
+          <button onclick="addWord()" class="btn btn-primary">Add Word</button>
+        </div>
+        <p id="add-word-error" class="error-msg"></p>
+      </div>
+
+      <div class="section-card" id="word-list-card">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- ── Progress Tab ── -->
+    <div id="tab-progress" class="tab-content">
+      <!-- rendered by JS -->
+    </div>
+
+  </div><!-- #app -->
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <script src="app.js"></script>
+</body>
+</html>
